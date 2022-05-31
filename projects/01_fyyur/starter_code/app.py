@@ -15,7 +15,6 @@ from flask_wtf import Form
 from forms import *
 from flask_migrate import Migrate
 from sqlalchemy import func
-from flask_marshmallow import Marshmallow
 #----------------------------------------------------------------------------#
 # App Config.
 #----------------------------------------------------------------------------#
@@ -25,7 +24,6 @@ moment = Moment(app)
 app.config.from_object('config')
 app.config['SQLALCHEMY_TRACK_MODIFICATION']=True
 db = SQLAlchemy(app)
-ma = Marshmallow(app)
 migrate = Migrate(app, db)
 
 # TODO: connect to a local postgresql database
@@ -53,10 +51,7 @@ class Venue(db.Model):
     website_link = db.Column(db.String(120))
     seeking_talent = db.Column(db.Boolean,default=False)
     seeking_description = db.Column(db.String(1000))
-    #upcoming_shows_count = db.Column(db.Integer, default=0)
-    #past_shows_count = db.Column(db.Integer, default=0)
     shows = db.relationship('Show',backref='venue',lazy=True, cascade="all, save-update, merge, delete, delete-orphan")
-    #cascade="all, delete, delete-orphan"
 
 class Artist(db.Model):
     __tablename__ = 'Artist'
@@ -115,10 +110,6 @@ def index():
 def venues():
   # TODO: replace with real venues data.
   #       num_upcoming_shows should be aggregated based on number of upcoming shows per venue.
-  #one_venue = Venue.query.all()
-  #venue_schema = VenueSchema()
-  #output = venue_schema.dump(one_venue)
-  #data = output
   current_time = datetime.now()
   venue_areas = Venue.query.distinct(Venue.state, Venue.city).all()
   data = []
@@ -139,16 +130,6 @@ def venues():
     city_state['venues'] = venues_list
     data.append(city_state)
     print(data)
-    #print(d)
-  #   for show in area.shows:
-  #     show =  {
-  #               'id':area.id,
-  #               'name':area.name,
-  #               'upcoming_shows': show.start_time
-  #     }
-  #     d['venues'].append(show)
-  #     data.append(d)
-  # print(data)
   return render_template('pages/venues.html', areas=data);
 
 @app.route('/venues/search', methods=['POST'])
