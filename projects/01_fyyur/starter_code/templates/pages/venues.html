@@ -10,9 +10,12 @@
 				<i class="fas fa-music"></i>
 				<div class="item">
 					<h5>{{ venue.name }}</h5>
+
 				</div>
 			</a>
+			
 		</li>
+		<a href="/venues/{{ venue.id }}/delete">Remove Venue</a>
 		{% endfor %}
 	</ul>
 {% endfor %}
