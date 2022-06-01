@@ -32,52 +32,52 @@ migrate = Migrate(app, db)
 # Models.
 #----------------------------------------------------------------------------#
 
+from models import *
+# class Venue(db.Model):
+#     __tablename__ = 'Venue'
 
-class Venue(db.Model):
-    __tablename__ = 'Venue'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(120))
-    city = db.Column(db.String(120))
-    state = db.Column(db.String(120))
-    address = db.Column(db.String(120))
-    phone = db.Column(db.String(120))
-    genres = db.Column(db.String(120))
-    image_link = db.Column(db.String(500))
-    facebook_link = db.Column(db.String(120))
+#     id = db.Column(db.Integer, primary_key=True)
+#     name = db.Column(db.String(120))
+#     city = db.Column(db.String(120))
+#     state = db.Column(db.String(120))
+#     address = db.Column(db.String(120))
+#     phone = db.Column(db.String(120))
+#     genres = db.Column(db.String(120))
+#     image_link = db.Column(db.String(500))
+#     facebook_link = db.Column(db.String(120))
     
-    # TODO: implement any missing fields, as a database migration using Flask-Migrate
-    genres = db.Column(db.String(120),nullable=False)
-    website_link = db.Column(db.String(120))
-    seeking_talent = db.Column(db.Boolean,default=False)
-    seeking_description = db.Column(db.String(1000))
-    shows = db.relationship('Show',backref='venue',lazy=True, cascade="all, save-update, merge, delete, delete-orphan")
+#     # TODO: implement any missing fields, as a database migration using Flask-Migrate
+#     genres = db.Column(db.String(120),nullable=False)
+#     website_link = db.Column(db.String(120))
+#     seeking_talent = db.Column(db.Boolean,default=False)
+#     seeking_description = db.Column(db.String(1000))
+#     shows = db.relationship('Show',backref='venue',lazy=True, cascade="all, save-update, merge, delete, delete-orphan")
 
-class Artist(db.Model):
-    __tablename__ = 'Artist'
+# class Artist(db.Model):
+#     __tablename__ = 'Artist'
  
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(120))
-    city = db.Column(db.String(120))
-    state = db.Column(db.String(120))
-    phone = db.Column(db.String(120))
-    genres = db.Column(db.String(120))
-    image_link = db.Column(db.String(500))
-    facebook_link = db.Column(db.String(120))
+#     id = db.Column(db.Integer, primary_key=True)
+#     name = db.Column(db.String(120))
+#     city = db.Column(db.String(120))
+#     state = db.Column(db.String(120))
+#     phone = db.Column(db.String(120))
+#     genres = db.Column(db.String(120))
+#     image_link = db.Column(db.String(500))
+#     facebook_link = db.Column(db.String(120))
 
-    # TODO: implement any missing fields, as a database migration using Flask-Migrate
-    website_link = db.Column(db.String(120))
-    seeking_venue = db.Column(db.Boolean, default=False)
-    seeking_description = db.Column(db.String(1000))
-    shows = db.relationship('Show',backref='artist',lazy=True, cascade="save-update, merge, delete")
+#     # TODO: implement any missing fields, as a database migration using Flask-Migrate
+#     website_link = db.Column(db.String(120))
+#     seeking_venue = db.Column(db.Boolean, default=False)
+#     seeking_description = db.Column(db.String(1000))
+#     shows = db.relationship('Show',backref='artist',lazy=True, cascade="save-update, merge, delete")
 
-# TODO Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
-class Show(db.Model):
-    __tablename__ = 'shows'
-    id = db.Column(db.Integer, primary_key=True)
-    start_time = db.Column(db.DateTime, nullable=False)
-    artist_id = db.Column(db.Integer,db.ForeignKey('Artist.id') ,nullable=False)
-    venue_id = db.Column(db.Integer,db.ForeignKey('Venue.id') ,nullable=False)
+# # TODO Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
+# class Show(db.Model):
+#     __tablename__ = 'shows'
+#     id = db.Column(db.Integer, primary_key=True)
+#     start_time = db.Column(db.DateTime, nullable=False)
+#     artist_id = db.Column(db.Integer,db.ForeignKey('Artist.id') ,nullable=False)
+#     venue_id = db.Column(db.Integer,db.ForeignKey('Venue.id') ,nullable=False)
     
 
 #----------------------------------------------------------------------------#
@@ -158,28 +158,31 @@ def search_venues():
 
 @app.route('/venues/<int:venue_id>')
 def show_venue(venue_id):
-  # shows the venue page with the given venue_id
+  # shows the venue   page with the given venue_id
   # TODO: replace with real venue data from the venues table, using venue_id
-  current_time = datetime.now()
+  past_shows_query = db.session.query(Show).join(Venue).filter(Show.venue_id==venue_id).filter(Show.start_time<datetime.now()).all()
+  #print(past_show)
+  # current_time = datetime.now()
   venue = Venue.query.get(venue_id)
   setattr(venue, 'genres', venue.genres.split(','))
 
-  past_shows_query = list(filter(lambda show: show.start_time < current_time, venue.shows))
+  # past_shows_query = list(filter(lambda show: show.start_time < current_time, venue.shows))
   past_shows = []
   for past_show in past_shows_query:
     show ={
       "artist_id": past_show.artist.id,
       "artist_name": past_show.artist.name,
+      'artist_genres': past_show.artist.genres.split(','),
       "artist_image_link": past_show.artist.image_link,
       "start_time": past_show.start_time.strftime('%m/%d/%y, %H:%M:%S')
       }
     past_shows.append(show)
-  
+  print(past_shows)
   setattr(venue, 'past_shows', past_shows)
   setattr(venue, 'past_shows_count', len(past_shows))
 
   # Upcoming shows
-  upcoming_shows_query = list(filter(lambda show: show.start_time > current_time, venue.shows))
+  upcoming_shows_query = db.session.query(Show).join(Venue).filter(Show.venue_id==venue_id).filter(Show.start_time>datetime.now()).all()
   upcoming_shows = []
   for upcoming_show in upcoming_shows_query:
     show ={
@@ -216,8 +219,8 @@ def create_venue_submission():
         name = form.name.data,
         city = form.city.data,
         state = form.state.data,
-        address = form.address.data,
         phone = form.phone.data,
+        address = form.address.data,
         genres = ','.join(form.genres.data),
         facebook_link = form.facebook_link.data,
         image_link = form.image_link.data,
@@ -230,16 +233,17 @@ def create_venue_submission():
 
       # on successful db insert, flash success
       flash('Venue ' + request.form['name'] + ' was successfully listed!')
-  
+  # on successful db insert, flash success
+  #flash('Artist ' + request.form['name'] + ' was successfully listed!')
   # TODO: on unsuccessful db insert, flash an error instead.
-  # e.g., flash('An error occurred. Venue ' + data.name + ' could not be listed.')
-  # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
+  # e.g., flash('An error occurred. Artist ' + data.name + ' could not be listed.')
   except:
     db.session.rollback()
-    flash('An error occurred. Venue ' + form.name.data + ' could not be listed.')
+    flash('An error occurred. Artist ' + form.name.data + ' could not be listed.')
     print(sys.exc_info())
   finally:
     db.session.close()
+  
   return render_template('pages/home.html')
 
 @app.route('/venues/<venue_id>/delete')
@@ -307,11 +311,11 @@ def search_artists():
 def show_artist(artist_id):
   # shows the artist page with the given artist_id
   # TODO: replace with real artist data from the artist table, using artist_id
-  current_time = datetime.now()
+  # current_time = datetime.now()
   artist = Artist.query.get(artist_id)
   setattr(artist, 'genres', artist.genres.split(','))
 
-  past_shows_query = list(filter(lambda show: show.start_time < current_time, artist.shows))
+  past_shows_query = db.session.query(Show).join(Artist).filter(Show.artist_id==artist_id).filter(Show.start_time<datetime.now()).all()
   past_shows = []
   for past_show in past_shows_query:
     show ={
@@ -327,7 +331,7 @@ def show_artist(artist_id):
   print(artist.past_shows)
 
   # Upcoming shows
-  upcoming_shows_query = list(filter(lambda show: show.start_time > current_time, artist.shows))
+  upcoming_shows_query = db.session.query(Show).join(Venue).filter(Show.artist_id==artist_id).filter(Show.start_time>datetime.now()).all()
   upcoming_shows = []
   for upcoming_show in upcoming_shows_query:
     show ={
@@ -478,7 +482,7 @@ def create_artist_submission():
       db.session.commit()
 
       # on successful db insert, flash success
-      flash('Venue ' + request.form['name'] + ' was successfully listed!')
+      flash('Artist ' + request.form['name'] + ' was successfully listed!')
   # on successful db insert, flash success
   #flash('Artist ' + request.form['name'] + ' was successfully listed!')
   # TODO: on unsuccessful db insert, flash an error instead.
