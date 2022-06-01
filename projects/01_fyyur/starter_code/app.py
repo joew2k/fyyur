@@ -125,7 +125,7 @@ def venues():
       venues_list.append({
         'id': venue.id,
         'name': venue.name,
-        'upcoming_shows': len(list(filter(lambda x: x.start_time > current_time, venue.shows)))
+        'upcoming_shows': len(list(filter(lambda venue_show: venue_show.start_time > current_time, venue.shows)))
         })
     city_state['venues'] = venues_list
     data.append(city_state)
@@ -161,10 +161,9 @@ def show_venue(venue_id):
   # shows the venue   page with the given venue_id
   # TODO: replace with real venue data from the venues table, using venue_id
   past_shows_query = db.session.query(Show).join(Venue).filter(Show.venue_id==venue_id).filter(Show.start_time<datetime.now()).all()
-  #print(past_show)
-  # current_time = datetime.now()
+  upcoming_shows_query = db.session.query(Show).join(Venue).filter(Show.venue_id==venue_id).filter(Show.start_time>datetime.now()).all()
   venue = Venue.query.get(venue_id)
-  setattr(venue, 'genres', venue.genres.split(','))
+ 
 
   # past_shows_query = list(filter(lambda show: show.start_time < current_time, venue.shows))
   past_shows = []
@@ -177,12 +176,10 @@ def show_venue(venue_id):
       "start_time": past_show.start_time.strftime('%m/%d/%y, %H:%M:%S')
       }
     past_shows.append(show)
-  print(past_shows)
-  setattr(venue, 'past_shows', past_shows)
-  setattr(venue, 'past_shows_count', len(past_shows))
+
 
   # Upcoming shows
-  upcoming_shows_query = db.session.query(Show).join(Venue).filter(Show.venue_id==venue_id).filter(Show.start_time>datetime.now()).all()
+  
   upcoming_shows = []
   for upcoming_show in upcoming_shows_query:
     show ={
@@ -193,9 +190,13 @@ def show_venue(venue_id):
       }
     upcoming_shows.append(show)
   
-  setattr(venue, 'upcoming_shows', upcoming_shows)
-  setattr(venue, 'upcoming_shows_count', len(upcoming_shows))
-  print(venue.upcoming_shows)
+  
+  venue.genres = venue.genres.split(',')
+  venue.past_shows=  past_shows
+  venue.past_shows_count= len(past_shows)
+  print(venue.past_shows)
+  venue.upcoming_shows= upcoming_shows
+  venue.upcoming_shows_count=len(upcoming_shows)
 
   
   return render_template('pages/show_venue.html', venue=venue)
@@ -232,14 +233,14 @@ def create_venue_submission():
       db.session.commit()
 
       # on successful db insert, flash success
-      flash('Venue ' + request.form['name'] + ' was successfully listed!')
+      flash('Venue ' + request.form.data + ' was successfully listed!')
   # on successful db insert, flash success
-  #flash('Artist ' + request.form['name'] + ' was successfully listed!')
+  #flash('Venue ' + request.form['name'] + ' was successfully listed!')
   # TODO: on unsuccessful db insert, flash an error instead.
-  # e.g., flash('An error occurred. Artist ' + data.name + ' could not be listed.')
+  # e.g., flash('An error occurred. Venue ' + data.name + ' could not be listed.')
   except:
     db.session.rollback()
-    flash('An error occurred. Artist ' + form.name.data + ' could not be listed.')
+    flash('An error occurred. Venue ' + form.name.data + ' could not be listed.')
     print(sys.exc_info())
   finally:
     db.session.close()
@@ -313,9 +314,11 @@ def show_artist(artist_id):
   # TODO: replace with real artist data from the artist table, using artist_id
   # current_time = datetime.now()
   artist = Artist.query.get(artist_id)
-  setattr(artist, 'genres', artist.genres.split(','))
-
   past_shows_query = db.session.query(Show).join(Artist).filter(Show.artist_id==artist_id).filter(Show.start_time<datetime.now()).all()
+  upcoming_shows_query = db.session.query(Show).join(Venue).filter(Show.artist_id==artist_id).filter(Show.start_time>datetime.now()).all()
+  
+
+ 
   past_shows = []
   for past_show in past_shows_query:
     show ={
@@ -326,12 +329,10 @@ def show_artist(artist_id):
       }
     past_shows.append(show)
   
-  setattr(artist, 'past_shows', past_shows)
-  setattr(artist, 'past_shows_count', len(past_shows))
-  print(artist.past_shows)
+  
 
   # Upcoming shows
-  upcoming_shows_query = db.session.query(Show).join(Venue).filter(Show.artist_id==artist_id).filter(Show.start_time>datetime.now()).all()
+  
   upcoming_shows = []
   for upcoming_show in upcoming_shows_query:
     show ={
@@ -341,10 +342,23 @@ def show_artist(artist_id):
       "start_time": upcoming_show.start_time.strftime('%m/%d/%y, %H:%M:%S')
       }
     upcoming_shows.append(show)
+  # artist_dict = {
+  #   'genres': artist.genres.split(','),
+  #   'past_shows': past_shows,
+  #   'past_shows_count': len(past_shows),
+  #   'upcoming_shows': upcoming_shows,
+  #   'upcoming_shows_count': len(upcoming_shows)
+
+  # } 
   
-  setattr(artist, 'upcoming_shows', upcoming_shows)
-  setattr(artist, 'upcoming_shows_count', len(upcoming_shows))
-  print(artist.upcoming_shows)
+  artist.genres = artist.genres.split(',')
+  artist.past_shows=  past_shows
+  artist.past_shows_count= len(past_shows)
+  print(artist.past_shows)
+  artist.upcoming_shows= upcoming_shows
+  artist.upcoming_shows_count=len(upcoming_shows)
+  print(artist) 
+  # print(artist.upcoming_shows)
   return render_template('pages/show_artist.html', artist=artist)
 
 #  Update
@@ -482,7 +496,7 @@ def create_artist_submission():
       db.session.commit()
 
       # on successful db insert, flash success
-      flash('Artist ' + request.form['name'] + ' was successfully listed!')
+      flash('Artist ' + form.name.data + ' was successfully listed!')
   # on successful db insert, flash success
   #flash('Artist ' + request.form['name'] + ' was successfully listed!')
   # TODO: on unsuccessful db insert, flash an error instead.
